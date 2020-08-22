@@ -4,3 +4,4 @@ large_files
 large_files/*
 nlp_class2/chunking/*
 .ipynb_checkpoints
+.ropeproject
