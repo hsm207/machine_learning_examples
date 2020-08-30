@@ -42,6 +42,7 @@ def get_transition_probs_and_rewards(grid):
 
 
 def evaluate_deterministic_policy(grid, policy):
+  transition_probs, rewards = get_transition_probs_and_rewards(grid)
   # initialize V(s) = 0
   V = {}
   for s in grid.all_states():
@@ -74,39 +75,53 @@ def evaluate_deterministic_policy(grid, policy):
       break
   return V
 
+def print_world(g):
+    """
+  Given a grid, visualize it using ascii
 
-if __name__ == '__main__':
+  'X' marks unreachable state e.g. wall
 
-  grid = standard_grid()
+  Integer values denote terminal state(s) and the associated reward
+  """
+    for i in range(g.rows):
+        print("-" * 24)
+        for j in range(g.cols):
+            state = (i, j)
+            if state in g.all_states():
+                if state in g.rewards:
+                    print(f"   {str(g.rewards[state]).rjust(2)}|", end="")
+                else:
+                    print("     |", end="")
+            else:
+                print("  X  |", end="")
+        print("")
+
+def solve_grid(grid, policy, gamma=0.9):
   transition_probs, rewards = get_transition_probs_and_rewards(grid)
 
-  # print rewards
-  print("rewards:")
-  print_values(grid.rewards, grid)
-
-  # state -> action
-  # we'll randomly choose an action and update as we learn
-  policy = {}
-  for s in grid.actions.keys():
-    policy[s] = np.random.choice(ACTION_SPACE)
-
   # initial policy
-  print("initial policy:")
+  print("Initial policy:")
   print_policy(policy, grid)
 
   # repeat until convergence - will break out when policy does not change
+  i = 1
   while True:
-
+    print(f"\nOn iteration {i} ...")
     # policy evaluation step - we already know how to do this!
+    print("Calculating V(s) under current policy ...")
     V = evaluate_deterministic_policy(grid, policy)
 
     # policy improvement step
+    print("Calculating Q(s, a) to find a better policy ...")
     is_policy_converged = True
-    for s in grid.actions.keys():
-      old_a = policy[s]
+    # we only consider the states we need to take action
+    # i.e. ignore unreachable and terminal states
+    for s, _ in grid.actions.items():
+      old_a = policy[s] # the action to take under the current policy
       new_a = None
       best_value = float('-inf')
 
+      
       # loop through all possible actions to find the best current action
       for a in ACTION_SPACE:
         v = 0
@@ -116,19 +131,30 @@ if __name__ == '__main__':
           v += transition_probs.get((s, a, s2), 0) * (r + GAMMA * V[s2])
 
         if v > best_value:
+          # track the best action we have found at state s so far
           best_value = v
           new_a = a
+          
 
       # new_a now represents the best action in this state
       policy[s] = new_a
       if new_a != old_a:
+        print(f"Found an improvement!\nInstead of {old_a} at state {s}, do {new_a}")
+        print("Current policy is:")
+        print_policy(policy, grid)
         is_policy_converged = False
 
     if is_policy_converged:
+      print("Policy converged!\n")
       break
+    i += 1
 
   # once we're done, print the final policy and values
-  print("values:")
+  print("V(s) under optimal policy:")
   print_values(V, grid)
-  print("policy:")
+  print("Optimal policy:")
   print_policy(policy, grid)
+
+
+if __name__ == '__main__':
+  pass
